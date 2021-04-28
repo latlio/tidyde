@@ -4,12 +4,27 @@
 \alias{filter_genes}
 \title{Filter lowly expressed genes}
 \usage{
-filter_genes(count_matrix, filter_method)
+filter_genes(
+  count_df,
+  id,
+  filter_method,
+  min_samples = 10,
+  min_cpm = 0.25,
+  ...
+)
 }
 \arguments{
-\item{count_matrix}{preprocessed matrix of counts}
+\item{count_df}{preprocessed dataframe of pure counts}
+
+\item{id}{vector of gene IDs}
 
 \item{filter_method}{Either `edgeR`, `samplenr`, or `cpm`}
+
+\item{min_samples}{minimum number of samples}
+
+\item{min_cpm}{minimum cpm}
+
+\item{...}{additional arguments to `filterByExpr()`}
 }
 \value{
 a `tbl` of the design matrix
@@ -19,6 +34,13 @@ a `tbl` of the design matrix
 }
 \details{
 I encourage users to exercise caution before using this filter function.
-Oftentimes, the filtering should be specific to the sequencing experiment.
-The `edgeR` option is a wrapper for `edgeR::filterByExpr()`
+Oftentimes, the filtering step should be specific to the sequencing experiment.
+The `edgeR` option is a wrapper for `edgeR::filterByExpr()`.
+The `samplenr` option filters out genes across sample whose counts are lower
+2*number_of_samples
+The `cpm` option filters out genes whose rowsums (excluding cells lower
+than `min_cpm`) are less than number_of_samples/min_samples
+}
+\examples{
+
 }

@@ -55,8 +55,7 @@ check_sample_names <- function(count_df,
               character(0)
     )
   ){
-    message("The column names of the count matrix and the
-            unique sample ID values are correctly specified.")
+    message("The column names of the count matrix and the unique sample ID values are correctly specified.")
 
     if(
       identical(
@@ -64,8 +63,7 @@ check_sample_names <- function(count_df,
         metadata %>% dplyr::select({{metadata_var}}) %>% dplyr::pull()
       )
     ) {
-      message("The order is also correct. You can safely proceed with the
-              remaining analysis steps.")
+      message("The order is also correct. You can safely proceed with the remaining analysis steps.")
     } else {
       message("The data was ordered incorrectly. The metadata has been reordered.")
       metadata <- metadata[
@@ -75,13 +73,12 @@ check_sample_names <- function(count_df,
         ),]
     }
   } else {
-    stop("Please specify a different variable or check that the values in the
-            metadata are written correctly.")
+    stop("Please specify a different variable or check that the values in the metadata are written correctly.")
   }
   list(
     old_count = count_df,
     mod_count = count_df_mod,
-    id = count_df %>% dplyr::select({{id_column}}),
+    id = count_df %>% dplyr::select({{id_column}}) %>% pull(),
     meta = metadata
   )
 }
@@ -122,7 +119,6 @@ check_sample_names <- function(count_df,
 
 make_design_matrix <- function(metadata, vars) {
   formula <- as.formula(paste0("~ 0 + ", paste(vars, collapse = "+")))
-  print(formula)
   modelr::model_matrix(metadata,
                        formula)
 }
@@ -131,49 +127,89 @@ make_design_matrix <- function(metadata, vars) {
 #'
 #' `filter_genes()` is a wrapper function for several filtering methods.
 #'
-#' @param count_matrix preprocessed matrix of counts
+#' @param count_df preprocessed dataframe of pure counts
+#' @param id vector of gene IDs
 #' @param filter_method Either `edgeR`, `samplenr`, or `cpm`
+#' @param min_samples minimum number of samples
+#' @param min_cpm minimum cpm
+#' @param ... additional arguments to `filterByExpr()`
 #'
 #' @details I encourage users to exercise caution before using this filter function.
-#' Oftentimes, the filtering should be specific to the sequencing experiment.
-#' The `edgeR` option is a wrapper for `edgeR::filterByExpr()`
+#' Oftentimes, the filtering step should be specific to the sequencing experiment.
+#' The `edgeR` option is a wrapper for `edgeR::filterByExpr()`.
+#' The `samplenr` option filters out genes across sample whose counts are lower
+#' 2*number_of_samples
+#' The `cpm` option filters out genes whose rowsums (excluding cells lower
+#' than `min_cpm`) are less than number_of_samples/min_samples
 #'
 #' @return a `tbl` of the design matrix
 #' @export
+#'
+#' @examples
+#'
 
-filter_genes <- function(count_matrix, filter_method) {
-  filter_by_edgeR <- function(dge) {
-    keep_exprs <- edgeR::filterByExpr(dge)
-    dge_filtered <- dge[keep_exprs,]
+filter_genes <- function(count_df,
+                         id,
+                         filter_method,
+                         min_samples = 10,
+                         min_cpm = 0.25,
+                         ...) {
+
+  filter_by_edgeR <- function(dge, id) {
+    counts <- dge$counts
+    #rownames is not "tidy" but it may be easier to work with
+    rownames(counts) <- id
+    genes_to_keep <- edgeR::filterByExpr(dge, ...)
+    counts <- counts[genes_to_keep,]
+    genes <- rownames(counts)
+    dge_filtered <- edgeR::DGEList(counts = counts,
+                                   genes = genes)
     dge_filtered
   }
 
-  filter_by_samplenr <- function(dge) {
+  filter_by_samplenr <- function(dge, id) {
     counts <- dge$counts
-    keepGenes <- rowSums(counts) >= 2*ncol(counts)
-    counts <- counts[keepGenes,]
-    genes <- dge$genes[rownames(counts),]
+    rownames(counts) <- id
+    genes_to_keep <- rowSums(counts) >= 2*ncol(counts)
+    counts <- counts[genes_to_keep,]
+    genes <- rownames(counts)
     dge_filtered <- edgeR::DGEList(counts = counts,
-                                   genes = genes,
-                                   samples = dge$samples,
-                                   group = dge$samples$SampleName)
+                                   genes = genes)
     dge_filtered
   }
 
   filter_by_cpm <- function(dge,
-                            min_samples = 10,
-                            min_cpm = 0.25) {
+                            id,
+                            min_samples,
+                            min_cpm) {
     counts <- dge$counts
-    tmp <- edgeR::cpm(counts)
-    keep_genes <- apply(tmp, 1, function(x) {
-      sum(x >= min_cpm) >= ncol(counts)/min_samples
-    })
-    counts <- counts[keep_genes,]
-    genes <- dge$genes[rownames(counts),]
+    rownames(counts) <- id
+    tmp <- edgeR::cpm(counts) %>% as.data.frame()
+
+    genes_to_keep <- tmp %>%
+      tibble::rownames_to_column("id") %>%
+      rowwise() %>%
+      mutate(cond = {ind <- c_across(2:last_col())
+                     sum(ind >= min_cpm) >= ncol(tmp)/min_samples}) %>%
+      ungroup() %>%
+      tibble::column_to_rownames("id") %>%
+      filter(cond)
+
+    counts <- counts[rownames(genes_to_keep),]
+    genes <- rownames(counts)
     dge_filtered <- edgeR::DGEList(counts = counts,
-                                   genes = genes,
-                                   samples = dge$samples,
-                                   group = dge$samples$SampleName)
+                                   genes = genes)
     dge_filtered
   }
+
+  dge <- edgeR::DGEList(count_df)
+  dge_filtered <- switch(filter_method,
+                         edgeR = filter_by_edgeR(dge, id),
+                         samplenr = filter_by_samplenr(dge, id),
+                         cpm = filter_by_cpm(dge,
+                                             id,
+                                             min_samples,
+                                             min_cpm))
+  dgelist_w_normfactors <- calcNormFactors(dge_filtered)
+  dgelist_w_normfactors
 }

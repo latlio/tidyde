@@ -1,0 +1,26 @@
+Package: tidyde
+Type: Package
+Title: Tidy Differential Expression
+Version: 0.1.0
+Author: Lathan Liou <lioul@merck.com>
+Maintainer: Lathan Liou <lioul@merck.com>
+Description: A tidy interface for performing differential expression (DE) analysis
+        on bulk-RNAseq data. Currently supports `limma`. `tidyde` makes it easy
+        to work with DE analyses in a tidy and consistent manner. 
+        In addition to performing DE analysis, `tidyde` also includes `ggplo2`
+        geoms and common data visualizations, such as barplot counts, pca plots,
+        and heatmaps.
+License: GPL (>=2)
+Encoding: UTF-8
+LazyData: true
+Imports: 
+    broom,
+    dplyr,
+    edgeR,
+    ggplot2,
+    magrittr,
+    modelr,
+    rlang,
+    tibble,
+    tidyr
+RoxygenNote: 7.1.1

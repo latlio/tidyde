@@ -21,11 +21,11 @@ necessary to identify for downstream functions}
 count_matrix}
 }
 \value{
-a `list` of `old_count`, `mod_count`, `id`, and `metadata`
+a `list` of `old_count`, `mod_count`, `id`, and `meta`
 where `old_count` is the original count dataframe supplied,
 `mod_count` is the pure count dataframe (no other columns),
 `id` is a vector of ID names,
-and `metadata` is the sorted metadata (if necessary), otherwise the supplied
+and `meta` is the sorted metadata (if necessary), otherwise the supplied
 metadata is returned with console message output of the quality control check
 }
 \description{
@@ -38,6 +38,9 @@ and the order in which the values appear need to be identical
 (e.g. `identical(colnames(my_count_matrix), metadata$my_column)` should be TRUE).
 }
 \examples{
+counts <- readr::read_delim("data/GSE60450_Lactation-GenewiseCounts.txt", delim = "\t")
+meta <- readr::read_delim("data/SampleInfo_Corrected.txt", delim = "\t") \%>\%
+mutate(FileName = stringr::str_replace(FileName, "\\\\.", "-"))
 
 check_sample_names(counts, EntrezGeneID, c(1,2), meta, FileName)
 

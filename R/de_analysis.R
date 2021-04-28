@@ -17,16 +17,19 @@
 #' @param metadata_var column of sample identifier that user expects to match with
 #' count_matrix
 #'
-#' @return a `list` of `old_count`, `mod_count`, `id`, and `metadata`
+#' @return a `list` of `old_count`, `mod_count`, `id`, and `meta`
 #' where `old_count` is the original count dataframe supplied,
 #' `mod_count` is the pure count dataframe (no other columns),
 #' `id` is a vector of ID names,
-#' and `metadata` is the sorted metadata (if necessary), otherwise the supplied
+#' and `meta` is the sorted metadata (if necessary), otherwise the supplied
 #' metadata is returned with console message output of the quality control check
 #'
 #' @export
 #'
 #' @examples
+#' counts <- readr::read_delim("data/GSE60450_Lactation-GenewiseCounts.txt", delim = "\t")
+#' meta <- readr::read_delim("data/SampleInfo_Corrected.txt", delim = "\t") %>%
+#' mutate(FileName = stringr::str_replace(FileName, "\\.", "-"))
 #'
 #' check_sample_names(counts, EntrezGeneID, c(1,2), meta, FileName)
 #'
@@ -79,13 +82,13 @@ check_sample_names <- function(count_df,
     old_count = count_df,
     mod_count = count_df_mod,
     id = count_df %>% dplyr::select({{id_column}}),
-    metadata = metadata
+    meta = metadata
   )
 }
 
 #' Create a design matrix
 #'
-#' `create_design_matrix()` creates a model matrix for your DE analysis.
+#' `make_design_matrix()` creates a model matrix for your DE analysis.
 #' See \code{\link[stats]{model.matrix}} for further details on what a design
 #' (or model) matrix is.
 #'
@@ -96,18 +99,28 @@ check_sample_names <- function(count_df,
 #' variable is dummy coded as the reference variable.
 #'
 #' @return a `tbl` of the design matrix
+#'
 #' @export
 #'
 #' @examples
 #'
-#' make_design_matrix(data, "CellType")
+#' make_design_matrix(metadata, "CellType")
 #'
-#' make_design_matrix(data, c("CellType", "Status"))
+#' make_design_matrix(metadata, c("CellType", "Status"))
 #'
 #' # Results in a different design matrix
-#' make_design_matrix(data, c("Status", "CellType"))
+#' make_design_matrix(metadata, c("Status", "CellType"))
+#'
+#' # In a pipeline
+#' counts <- readr::read_delim("data/GSE60450_Lactation-GenewiseCounts.txt", delim = "\t")
+#' meta <- readr::read_delim("data/SampleInfo_Corrected.txt", delim = "\t") %>%
+#'   mutate(FileName = stringr::str_replace(FileName, "\\.", "-"))
+#'
+#' my_design <- check_sample_names(counts, EntrezGeneID, c(1,2), meta, FileName) %>%
+#'   purrr::pluck("meta") %>%
+#'   make_design_matrix(., c("CellType"))
 
-create_model_matrix <- function(metadata, vars) {
+make_design_matrix <- function(metadata, vars) {
   formula <- as.formula(paste0("~ 0 + ", paste(vars, collapse = "+")))
   print(formula)
   modelr::model_matrix(metadata,

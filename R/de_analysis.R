@@ -8,28 +8,46 @@
 #' and the order in which the values appear need to be identical
 #' (e.g. `identical(colnames(my_count_matrix), metadata$my_column)` should be TRUE).
 #'
-#' @param count_matrix preprocessed matrix of counts, rownames should be gene IDs,
-#' colnames should be samples, cells should only contains counts
-#' @param cols_to_remove vector of column numbers that do not correspond to a sample
+#' @param count_df cleaned dataframe of counts, rows should be gene IDs,
+#' columns should be samples, cells should only contain counts
+#' @param id_column identify the column name that contains the gene IDs
+#' @param cols_to_remove vector of column numbers that do not correspond to a sample,
+#' necessary to identify for downstream functions
 #' @param metadata cleaned metadata for RNAseq data
 #' @param metadata_var column of sample identifier that user expects to match with
 #' count_matrix
 #'
-#' @return a `tbl` of the sorted metadata (if necessary), otherwise the supplied
+#' @return a `list` of `old_count`, `mod_count`, `id`, and `metadata`
+#' where `old_count` is the original count dataframe supplied,
+#' `mod_count` is the pure count dataframe (no other columns),
+#' `id` is a vector of ID names,
+#' and `metadata` is the sorted metadata (if necessary), otherwise the supplied
 #' metadata is returned with console message output of the quality control check
+#'
 #' @export
 #'
 #' @examples
 #'
-#' check_sample_names(counts, meta, FileName)
+#' check_sample_names(counts, EntrezGeneID, c(1,2), meta, FileName)
 #'
-check_sample_names <- function(count_matrix,
+check_sample_names <- function(count_df,
+                               id_column,
                                cols_to_remove,
                                metadata,
                                metadata_var) {
+
+  # coerce to dataframe
+  if(!is.data.frame(count_df)) {
+    message("Your input data was coerced into a data frame.")
+    count_df <- as.data.frame(count_df)
+  }
+
+  #output count dataframe with purely counts
+  count_df_mod <- count_df[,-cols_to_remove]
+
   if (
     identical(
-      setdiff(colnames(count_matrix)[-cols_to_remove],
+      setdiff(colnames(count_df)[-cols_to_remove],
               metadata %>% dplyr::select({{metadata_var}}) %>% dplyr::pull()),
               character(0)
     )
@@ -39,7 +57,7 @@ check_sample_names <- function(count_matrix,
 
     if(
       identical(
-        colnames(count_matrix)[-cols_to_remove],
+        colnames(count_df)[-cols_to_remove],
         metadata %>% dplyr::select({{metadata_var}}) %>% dplyr::pull()
       )
     ) {
@@ -49,7 +67,7 @@ check_sample_names <- function(count_matrix,
       message("The data was ordered incorrectly. The metadata has been reordered.")
       metadata <- metadata[
         match(
-          colnames(count_matrix)[-cols_to_remove],
+          colnames(count_df)[-cols_to_remove],
           metadata %>% dplyr::select({{metadata_var}}) %>% dplyr::pull()
         ),]
     }
@@ -57,7 +75,12 @@ check_sample_names <- function(count_matrix,
     stop("Please specify a different variable or check that the values in the
             metadata are written correctly.")
   }
-  metadata
+  list(
+    old_count = count_df,
+    mod_count = count_df_mod,
+    id = count_df %>% dplyr::select({{id_column}}),
+    metadata = metadata
+  )
 }
 
 #' Create a design matrix
@@ -105,7 +128,7 @@ create_model_matrix <- function(metadata, vars) {
 #' @return a `tbl` of the design matrix
 #' @export
 
-filter_genes <- function() {
+filter_genes <- function(count_matrix, filter_method) {
   filter_by_edgeR <- function(dge) {
     keep_exprs <- edgeR::filterByExpr(dge)
     dge_filtered <- dge[keep_exprs,]

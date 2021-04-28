@@ -19,9 +19,16 @@ a `tbl` of the design matrix
 See \code{\link[stats]{model.matrix}} for further details on what a design
 (or model) matrix is.
 }
+\details{
+The order in which you specify your variables will affect which
+variable is dummy coded as the reference variable.
+}
 \examples{
 
 make_design_matrix(data, "CellType")
 
 make_design_matrix(data, c("CellType", "Status"))
+
+# Results in a different design matrix
+make_design_matrix(data, c("Status", "CellType"))
 }

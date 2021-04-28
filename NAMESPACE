@@ -3,4 +3,5 @@
 export("%>%")
 export(check_sample_names)
 export(create_model_matrix)
+export(filter_genes)
 importFrom(magrittr,"%>%")

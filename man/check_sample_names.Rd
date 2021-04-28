@@ -4,10 +4,16 @@
 \alias{check_sample_names}
 \title{Check sample names}
 \usage{
-check_sample_names(count_matrix, metadata, metadata_var)
+check_sample_names(count_df, id_column, cols_to_remove, metadata, metadata_var)
 }
 \arguments{
-\item{count_matrix}{preprocessed matrix of counts}
+\item{count_df}{cleaned dataframe of counts, rows should be gene IDs,
+columns should be samples, cells should only contain counts}
+
+\item{id_column}{identify the column name that contains the gene IDs}
+
+\item{cols_to_remove}{vector of column numbers that do not correspond to a sample,
+necessary to identify for downstream functions}
 
 \item{metadata}{cleaned metadata for RNAseq data}
 
@@ -15,7 +21,11 @@ check_sample_names(count_matrix, metadata, metadata_var)
 count_matrix}
 }
 \value{
-a `tbl` of the sorted metadata (if necessary), otherwise the supplied
+a `list` of `old_count`, `mod_count`, `id`, and `metadata`
+where `old_count` is the original count dataframe supplied,
+`mod_count` is the pure count dataframe (no other columns),
+`id` is a vector of ID names,
+and `metadata` is the sorted metadata (if necessary), otherwise the supplied
 metadata is returned with console message output of the quality control check
 }
 \description{
@@ -29,6 +39,6 @@ and the order in which the values appear need to be identical
 }
 \examples{
 
-check_sample_names(counts, meta, FileName)
+check_sample_names(counts, EntrezGeneID, c(1,2), meta, FileName)
 
 }

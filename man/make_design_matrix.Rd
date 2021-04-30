@@ -24,7 +24,6 @@ The order in which you specify your variables will affect which
 variable is dummy coded as the reference variable.
 }
 \examples{
-
 make_design_matrix(metadata, "CellType")
 
 make_design_matrix(metadata, c("CellType", "Status"))
@@ -37,7 +36,7 @@ counts <- readr::read_delim("data/GSE60450_Lactation-GenewiseCounts.txt", delim 
 meta <- readr::read_delim("data/SampleInfo_Corrected.txt", delim = "\t") \%>\%
   mutate(FileName = stringr::str_replace(FileName, "\\\\.", "-"))
 
-my_design <- check_sample_names(counts, EntrezGeneID, c(1,2), meta, FileName) \%>\%
+my_design <- check_sample_names(counts, c(1,2), meta, FileName) \%>\%
   purrr::pluck("meta") \%>\%
   make_design_matrix(., c("CellType"))
 }

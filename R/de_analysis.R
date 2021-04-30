@@ -16,11 +16,17 @@
 #' @param metadata_var column of sample identifier that user expects to match with
 #' count_matrix
 #'
-#' @return a `list` of `old_count`, `mod_count`, and `meta`
-#' where `old_count` is the original count dataframe supplied,
-#' `mod_count` is the pure count dataframe (no other columns),
-#' and `meta` is the sorted metadata (if necessary), otherwise the supplied
-#' metadata is returned with console message output of the quality control check
+#' @return a `list` with the following components:
+#' \item{old_count}{the original count dataframe supplied}
+#' \item{mod_count}{the pure count dataframe (no other columns)}
+#' \item{meta}{sorted metadata (if necessary), otherwise the supplied
+#' metadata is returned with console message output of the quality control check.}
+#'
+#' @details The proportion of zeros in the original count data is also printed to the
+#' console. For count data that has a medium to high proportion of zeros,
+#' \code{\link[edgeR]{voomLmFit}} is recommended. Otherwise
+#' \code{\link[edgeR]{voom}} followed by \code{\link[edgeR]{lmFit}} is
+#' recommended.
 #'
 #' @export
 #'
@@ -29,13 +35,12 @@
 #' meta <- readr::read_delim("data/SampleInfo_Corrected.txt", delim = "\t") %>%
 #' mutate(FileName = stringr::str_replace(FileName, "\\.", "-"))
 #'
-#' check_sample_names(counts, EntrezGeneID, c(1,2), meta, FileName)
+#' check_sample_names(counts, c(1,2), meta, FileName)
 #'
 check_sample_names <- function(count_df,
                                cols_to_remove,
                                metadata,
                                metadata_var) {
-
   # coerce to dataframe
   if(!is.data.frame(count_df)) {
     message("Your input data was coerced into a data frame.")
@@ -72,6 +77,10 @@ check_sample_names <- function(count_df,
   } else {
     stop("Please specify a different variable or check that the values in the metadata are written correctly.")
   }
+
+  cat("The proportion of zeroes in your count data is ",
+      sum(count_df == 0)/(ncol(count_df) * nrow(count_df)))
+
   list(
     old_count = count_df,
     mod_count = count_df_mod,
@@ -96,7 +105,6 @@ check_sample_names <- function(count_df,
 #' @export
 #'
 #' @examples
-#'
 #' make_design_matrix(metadata, "CellType")
 #'
 #' make_design_matrix(metadata, c("CellType", "Status"))
@@ -109,7 +117,7 @@ check_sample_names <- function(count_df,
 #' meta <- readr::read_delim("data/SampleInfo_Corrected.txt", delim = "\t") %>%
 #'   mutate(FileName = stringr::str_replace(FileName, "\\.", "-"))
 #'
-#' my_design <- check_sample_names(counts, EntrezGeneID, c(1,2), meta, FileName) %>%
+#' my_design <- check_sample_names(counts, c(1,2), meta, FileName) %>%
 #'   purrr::pluck("meta") %>%
 #'   make_design_matrix(., c("CellType"))
 
@@ -119,6 +127,7 @@ make_design_matrix <- function(metadata, vars) {
                        formula)
 }
 
+#'
 #' Filter lowly expressed genes
 #'
 #' `filter_genes()` is a wrapper function for several filtering methods.
@@ -138,20 +147,21 @@ make_design_matrix <- function(metadata, vars) {
 #' The `cpm` option filters out genes whose rowsums (excluding cells lower
 #' than `min_cpm`) are less than number_of_samples/min_samples
 #'
-#' @return a `list` of a vector of filtered counts called `counts`,
-#' a dataframe called `samples` containing the library sizes and the normalization
-#' factors, and a dataframe called `genes` contained the gene IDs
+#' @return a `list` (`DGEList`) with the following components:
+#' \item{counts}{a vector of the filtered counts}
+#' \item{samples}{a dataframe containing the library sizes and the normalization
+#' factors}
+#' \item{genes} a dataframe containing the gene IDs
 #'
 #' @export
 #'
 #' @examples
-#'
 #' counts <- readr::read_delim("data/GSE60450_Lactation-GenewiseCounts.txt", delim = "\t")
 #' meta <- readr::read_delim("data/SampleInfo_Corrected.txt", delim = "\t") %>%
 #'   mutate(FileName = stringr::str_replace(FileName, "\\.", "-"))
 #'
 #' # this step may differ depending on how your data is formatted
-#' id <- counts$EntrezGeneId
+#' id <- as.character(counts$EntrezGeneID)
 #'
 #' check_sample_names(counts, c(1,2), meta, FileName) %>%
 #'   purrr::pluck("mod_count") %>%
@@ -221,4 +231,68 @@ filter_genes <- function(count_df,
                                              min_cpm))
   dgelist_w_normfactors <- calcNormFactors(dge_filtered)
   dgelist_w_normfactors
+}
+
+#' Convert count data to voom
+#'
+#' `make_voom()` is a wrapper function for `voom()`
+#'
+#' @param .dge a `list` or a `DGElist` object
+#' @param design_matrix a design matrix with rows corresponding to samples
+#' and columns to coefficients to be estimated
+#' @param .f limma::voom
+#' @param ... additional arguments passed to `.f`
+#'
+#' @details Please refer to \code{\link[limma]{voom}} for more information.
+#'
+#' @return a `list` with the following components:
+#' \item{E}{a numeric matrix of normalized expression values on the log2 scale}
+#' \item{weights}{numeric matrix of inverse variance weights}
+#' \item{design}{design matrix}
+#' \item{lib.size}{numeric vector of total normalized library sizes}
+#' \item{genes}{dataframe of gene annotation extracted from `counts`}
+#'
+#' @export
+#'
+#' @examples
+#' counts <- readr::read_delim("data/GSE60450_Lactation-GenewiseCounts.txt", delim = "\t")
+#' meta <- readr::read_delim("data/SampleInfo_Corrected.txt", delim = "\t") %>%
+#'   mutate(FileName = stringr::str_replace(FileName, "\\.", "-"))
+#'
+#' id <- as.character(counts$EntrezGeneID)
+#' check_sample_names(counts, c(1,2), meta, FileName) %>%
+#'   purrr::pluck("mod_count") %>%
+#'   filter_genes(., id, "edgeR") %>%
+#'   make_voom(., my_design)
+
+make_voom <- function(.dge, design_matrix, .f = limma::voom, ...) {
+  .args <- rlang::enexprs(...)
+
+  rlang::eval_tidy(rlang::expr(.f(counts = .dge,
+                                  design = design_matrix,
+                                  !!! .args)))
+}
+
+#' Model limma
+#'
+#' `model_limma()` is a wrapper function for `lmFit`. Fits a linear model for
+#' each gene.
+#'
+#' @param voom a voom object
+#' @param .f limma::lmFit
+#' @param ... additional arguments to .f
+#'
+#' @details Please refer to \code{\link[limma]{lmFit}} for more information.
+#'
+#' @return
+#'
+#' @export
+#'
+#' @examples
+
+model_limma <- function(.data, .f = limma::lmFit, ...) {
+  .args <- rlang::enexprs(...)
+
+  rlang::eval_tidy(rlang::expr(.f(object = .data,
+                                  !!! .args)))
 }

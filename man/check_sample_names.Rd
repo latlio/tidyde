@@ -19,11 +19,11 @@ necessary to identify for downstream functions}
 count_matrix}
 }
 \value{
-a `list` of `old_count`, `mod_count`, and `meta`
-where `old_count` is the original count dataframe supplied,
-`mod_count` is the pure count dataframe (no other columns),
-and `meta` is the sorted metadata (if necessary), otherwise the supplied
-metadata is returned with console message output of the quality control check
+a `list` with the following components:
+\item{old_count}{the original count dataframe supplied}
+\item{mod_count}{the pure count dataframe (no other columns)}
+\item{meta}{sorted metadata (if necessary), otherwise the supplied
+metadata is returned with console message output of the quality control check.}
 }
 \description{
 `check_sample_names()` is a simple quality control step that verifies whether
@@ -34,11 +34,18 @@ user-defined metadata column need to be identical
 and the order in which the values appear need to be identical
 (e.g. `identical(colnames(my_count_matrix), metadata$my_column)` should be TRUE).
 }
+\details{
+The proportion of zeros in the original count data is also printed to the
+console. For count data that has a medium to high proportion of zeros,
+\code{\link[edgeR]{voomLmFit}} is recommended. Otherwise
+\code{\link[edgeR]{voom}} followed by \code{\link[edgeR]{lmFit}} is
+recommended.
+}
 \examples{
 counts <- readr::read_delim("data/GSE60450_Lactation-GenewiseCounts.txt", delim = "\t")
 meta <- readr::read_delim("data/SampleInfo_Corrected.txt", delim = "\t") \%>\%
 mutate(FileName = stringr::str_replace(FileName, "\\\\.", "-"))
 
-check_sample_names(counts, EntrezGeneID, c(1,2), meta, FileName)
+check_sample_names(counts, c(1,2), meta, FileName)
 
 }

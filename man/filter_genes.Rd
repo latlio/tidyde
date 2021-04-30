@@ -27,9 +27,11 @@ filter_genes(
 \item{...}{additional arguments to `filterByExpr()`}
 }
 \value{
-a `list` of a vector of filtered counts called `counts`,
-a dataframe called `samples` containing the library sizes and the normalization
-factors, and a dataframe called `genes` contained the gene IDs
+a `list` (`DGEList`) with the following components:
+\item{counts}{a vector of the filtered counts}
+\item{samples}{a dataframe containing the library sizes and the normalization
+factors}
+\item{genes} a dataframe containing the gene IDs
 }
 \description{
 `filter_genes()` is a wrapper function for several filtering methods.
@@ -44,13 +46,12 @@ The `cpm` option filters out genes whose rowsums (excluding cells lower
 than `min_cpm`) are less than number_of_samples/min_samples
 }
 \examples{
-
 counts <- readr::read_delim("data/GSE60450_Lactation-GenewiseCounts.txt", delim = "\t")
 meta <- readr::read_delim("data/SampleInfo_Corrected.txt", delim = "\t") \%>\%
   mutate(FileName = stringr::str_replace(FileName, "\\\\.", "-"))
 
 # this step may differ depending on how your data is formatted
-id <- counts$EntrezGeneId
+id <- as.character(counts$EntrezGeneID)
 
 check_sample_names(counts, c(1,2), meta, FileName) \%>\%
   purrr::pluck("mod_count") \%>\%

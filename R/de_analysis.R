@@ -10,17 +10,15 @@
 #'
 #' @param count_df cleaned dataframe of counts, rows should be gene IDs,
 #' columns should be samples, cells should only contain counts
-#' @param id_column identify the column name that contains the gene IDs
 #' @param cols_to_remove vector of column numbers that do not correspond to a sample,
 #' necessary to identify for downstream functions
 #' @param metadata cleaned metadata for RNAseq data
 #' @param metadata_var column of sample identifier that user expects to match with
 #' count_matrix
 #'
-#' @return a `list` of `old_count`, `mod_count`, `id`, and `meta`
+#' @return a `list` of `old_count`, `mod_count`, and `meta`
 #' where `old_count` is the original count dataframe supplied,
 #' `mod_count` is the pure count dataframe (no other columns),
-#' `id` is a vector of ID names,
 #' and `meta` is the sorted metadata (if necessary), otherwise the supplied
 #' metadata is returned with console message output of the quality control check
 #'
@@ -34,7 +32,6 @@
 #' check_sample_names(counts, EntrezGeneID, c(1,2), meta, FileName)
 #'
 check_sample_names <- function(count_df,
-                               id_column,
                                cols_to_remove,
                                metadata,
                                metadata_var) {
@@ -78,7 +75,6 @@ check_sample_names <- function(count_df,
   list(
     old_count = count_df,
     mod_count = count_df_mod,
-    id = count_df %>% dplyr::select({{id_column}}) %>% pull(),
     meta = metadata
   )
 }
@@ -142,11 +138,24 @@ make_design_matrix <- function(metadata, vars) {
 #' The `cpm` option filters out genes whose rowsums (excluding cells lower
 #' than `min_cpm`) are less than number_of_samples/min_samples
 #'
-#' @return a `tbl` of the design matrix
+#' @return a `list` of a vector of filtered counts called `counts`,
+#' a dataframe called `samples` containing the library sizes and the normalization
+#' factors, and a dataframe called `genes` contained the gene IDs
+#'
 #' @export
 #'
 #' @examples
 #'
+#' counts <- readr::read_delim("data/GSE60450_Lactation-GenewiseCounts.txt", delim = "\t")
+#' meta <- readr::read_delim("data/SampleInfo_Corrected.txt", delim = "\t") %>%
+#'   mutate(FileName = stringr::str_replace(FileName, "\\.", "-"))
+#'
+#' # this step may differ depending on how your data is formatted
+#' id <- counts$EntrezGeneId
+#'
+#' check_sample_names(counts, c(1,2), meta, FileName) %>%
+#'   purrr::pluck("mod_count") %>%
+#'   filter_genes(., id, "edgeR")
 
 filter_genes <- function(count_df,
                          id,

@@ -27,7 +27,9 @@ filter_genes(
 \item{...}{additional arguments to `filterByExpr()`}
 }
 \value{
-a `tbl` of the design matrix
+a `list` of a vector of filtered counts called `counts`,
+a dataframe called `samples` containing the library sizes and the normalization
+factors, and a dataframe called `genes` contained the gene IDs
 }
 \description{
 `filter_genes()` is a wrapper function for several filtering methods.
@@ -43,4 +45,14 @@ than `min_cpm`) are less than number_of_samples/min_samples
 }
 \examples{
 
+counts <- readr::read_delim("data/GSE60450_Lactation-GenewiseCounts.txt", delim = "\t")
+meta <- readr::read_delim("data/SampleInfo_Corrected.txt", delim = "\t") \%>\%
+  mutate(FileName = stringr::str_replace(FileName, "\\\\.", "-"))
+
+# this step may differ depending on how your data is formatted
+id <- counts$EntrezGeneId
+
+check_sample_names(counts, c(1,2), meta, FileName) \%>\%
+  purrr::pluck("mod_count") \%>\%
+  filter_genes(., id, "edgeR")
 }

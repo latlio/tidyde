@@ -4,13 +4,11 @@
 \alias{check_sample_names}
 \title{Check sample names}
 \usage{
-check_sample_names(count_df, id_column, cols_to_remove, metadata, metadata_var)
+check_sample_names(count_df, cols_to_remove, metadata, metadata_var)
 }
 \arguments{
 \item{count_df}{cleaned dataframe of counts, rows should be gene IDs,
 columns should be samples, cells should only contain counts}
-
-\item{id_column}{identify the column name that contains the gene IDs}
 
 \item{cols_to_remove}{vector of column numbers that do not correspond to a sample,
 necessary to identify for downstream functions}
@@ -21,10 +19,9 @@ necessary to identify for downstream functions}
 count_matrix}
 }
 \value{
-a `list` of `old_count`, `mod_count`, `id`, and `meta`
+a `list` of `old_count`, `mod_count`, and `meta`
 where `old_count` is the original count dataframe supplied,
 `mod_count` is the pure count dataframe (no other columns),
-`id` is a vector of ID names,
 and `meta` is the sorted metadata (if necessary), otherwise the supplied
 metadata is returned with console message output of the quality control check
 }

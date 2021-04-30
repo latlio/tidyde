@@ -289,7 +289,7 @@ make_voom <- function(.dge, design_matrix, .f = limma::voom, ...) {
 #' @export
 #'
 #' @examples
-#' #' counts <- readr::read_delim("data/GSE60450_Lactation-GenewiseCounts.txt", delim = "\t")
+#' counts <- readr::read_delim("data/GSE60450_Lactation-GenewiseCounts.txt", delim = "\t")
 #' meta <- readr::read_delim("data/SampleInfo_Corrected.txt", delim = "\t") %>%
 #'   mutate(FileName = stringr::str_replace(FileName, "\\.", "-"))
 #'
@@ -325,6 +325,17 @@ model_limma <- function(.data, .f = limma::lmFit, ...) {
 #' @export
 #'
 #' @examples
+#' counts <- readr::read_delim("data/GSE60450_Lactation-GenewiseCounts.txt", delim = "\t")
+#' meta <- readr::read_delim("data/SampleInfo_Corrected.txt", delim = "\t") %>%
+#'   mutate(FileName = stringr::str_replace(FileName, "\\.", "-"))
+#'
+#' id <- as.character(counts$EntrezGeneID)
+#' check_sample_names(counts, c(1,2), meta, FileName) %>%
+#'   purrr::pluck("mod_count") %>%
+#'   filter_genes(., id, "edgeR") %>%
+#'   make_voom(., my_design) %>%
+#'   model_limma() %>%
+#'   make_contrasts(Statuspregnant, Statusvirgin)
 make_contrasts <- function(.fit, design_matrix, ...) {
   contrast_components <- rlang::enexprs(...)
   my_contrast <- paste(contrast_components, collapse = " - ")
@@ -339,22 +350,33 @@ make_contrasts <- function(.fit, design_matrix, ...) {
 #'
 #' `model_bayes()` performs an empirical Bayes fit
 #'
-#' @param .fit an MArrayLM object or list object. Must contain components
-#' `coefficients` and `stdev.unscaled`
+#' @param .fit an MArrayLM object produced by `model_limma()` or
+#' `make_contrasts()`
 #' @param .f limma::eBayes
 #' @param ... additional arguments to .f
 #'
-#' @details Please refer to \code{\link[limma]{lmFit}} for more information.
+#' @details Please refer to \code{\link[limma]{eBayes}} for more information.
 #'
 #' @return a `list` (`MArrayLM`) object containing the results of the fit
 #'
 #' @export
 #'
 #' @examples
+#' counts <- readr::read_delim("data/GSE60450_Lactation-GenewiseCounts.txt", delim = "\t")
+#' meta <- readr::read_delim("data/SampleInfo_Corrected.txt", delim = "\t") %>%
+#'   mutate(FileName = stringr::str_replace(FileName, "\\.", "-"))
 #'
+#' id <- as.character(counts$EntrezGeneID)
+#' check_sample_names(counts, c(1,2), meta, FileName) %>%
+#'   purrr::pluck("mod_count") %>%
+#'   filter_genes(., id, "edgeR") %>%
+#'   make_voom(., my_design) %>%
+#'   model_limma() %>%
+#'   make_contrasts(Statuspregnant, Statusvirgin) %>%
+#'   model_bayes()
 model_bayes <- function(.fit, .f = limma::eBayes, ...) {
   .args <- rlang::enexprs(...)
 
-  rlang::eval_tidy(rlang::expr(.f(object = .fit,
+  rlang::eval_tidy(rlang::expr(.f(fit = .fit,
                                   !!! .args)))
 }

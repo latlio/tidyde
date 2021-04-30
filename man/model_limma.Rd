@@ -24,7 +24,7 @@ each gene.
 Please refer to \code{\link[limma]{lmFit}} for more information.
 }
 \examples{
-#' counts <- readr::read_delim("data/GSE60450_Lactation-GenewiseCounts.txt", delim = "\t")
+counts <- readr::read_delim("data/GSE60450_Lactation-GenewiseCounts.txt", delim = "\t")
 meta <- readr::read_delim("data/SampleInfo_Corrected.txt", delim = "\t") \%>\%
   mutate(FileName = stringr::str_replace(FileName, "\\\\.", "-"))
 

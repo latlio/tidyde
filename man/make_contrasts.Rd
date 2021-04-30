@@ -25,3 +25,16 @@ for a given set of contrasts
 \details{
 Please refer to \code{\link[limma]{contrasts.fit}} for more information.
 }
+\examples{
+counts <- readr::read_delim("data/GSE60450_Lactation-GenewiseCounts.txt", delim = "\t")
+meta <- readr::read_delim("data/SampleInfo_Corrected.txt", delim = "\t") \%>\%
+  mutate(FileName = stringr::str_replace(FileName, "\\\\.", "-"))
+
+id <- as.character(counts$EntrezGeneID)
+check_sample_names(counts, c(1,2), meta, FileName) \%>\%
+  purrr::pluck("mod_count") \%>\%
+  filter_genes(., id, "edgeR") \%>\%
+  make_voom(., my_design) \%>\%
+  model_limma() \%>\%
+  make_contrasts(Statuspregnant, Statusvirgin)
+}

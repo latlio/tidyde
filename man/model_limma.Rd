@@ -14,7 +14,7 @@ model_limma(.data, .f = limma::lmFit, ...)
 \item{voom}{a voom object}
 }
 \value{
-
+a `list` (`MArrayLM`) object containing the results of the fit
 }
 \description{
 `model_limma()` is a wrapper function for `lmFit`. Fits a linear model for
@@ -22,4 +22,16 @@ each gene.
 }
 \details{
 Please refer to \code{\link[limma]{lmFit}} for more information.
+}
+\examples{
+#' counts <- readr::read_delim("data/GSE60450_Lactation-GenewiseCounts.txt", delim = "\t")
+meta <- readr::read_delim("data/SampleInfo_Corrected.txt", delim = "\t") \%>\%
+  mutate(FileName = stringr::str_replace(FileName, "\\\\.", "-"))
+
+id <- as.character(counts$EntrezGeneID)
+check_sample_names(counts, c(1,2), meta, FileName) \%>\%
+  purrr::pluck("mod_count") \%>\%
+  filter_genes(., id, "edgeR") \%>\%
+  make_voom(., my_design) \%>\%
+  model_limma()
 }

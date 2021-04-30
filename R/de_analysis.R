@@ -284,15 +284,77 @@ make_voom <- function(.dge, design_matrix, .f = limma::voom, ...) {
 #'
 #' @details Please refer to \code{\link[limma]{lmFit}} for more information.
 #'
-#' @return
+#' @return a `list` (`MArrayLM`) object containing the results of the fit
 #'
 #' @export
 #'
 #' @examples
+#' #' counts <- readr::read_delim("data/GSE60450_Lactation-GenewiseCounts.txt", delim = "\t")
+#' meta <- readr::read_delim("data/SampleInfo_Corrected.txt", delim = "\t") %>%
+#'   mutate(FileName = stringr::str_replace(FileName, "\\.", "-"))
+#'
+#' id <- as.character(counts$EntrezGeneID)
+#' check_sample_names(counts, c(1,2), meta, FileName) %>%
+#'   purrr::pluck("mod_count") %>%
+#'   filter_genes(., id, "edgeR") %>%
+#'   make_voom(., my_design) %>%
+#'   model_limma()
 
 model_limma <- function(.data, .f = limma::lmFit, ...) {
   .args <- rlang::enexprs(...)
 
   rlang::eval_tidy(rlang::expr(.f(object = .data,
+                                  !!! .args)))
+}
+
+#' Make contrasts
+#'
+#' `make_contrasts()` computes estimated coefficients and standard errors
+#' for a given set of contrasts
+#'
+#' @param .fit an MArrayLM object or list object. Must contain components
+#' `coefficients` and `stdev.unscaled`
+#' @param design_matrix a design matrix with rows corresponding to samples
+#' and columns to coefficients to be estimated
+#' @param ... the names of the variables which you like to compare
+#'
+#' @details Please refer to \code{\link[limma]{contrasts.fit}} for more information.
+#'
+#' @return a `list` object of the same class as .fit
+#'
+#' @export
+#'
+#' @examples
+make_contrasts <- function(.fit, design_matrix, ...) {
+  contrast_components <- rlang::enexprs(...)
+  my_contrast <- paste(contrast_components, collapse = " - ")
+  contrast_matrix <- limma::makeContrasts(
+    contrasts = c(my_contrast),
+    levels = colnames(design_matrix)
+  )
+  contrasts.fit(.fit, contrast_matrix)
+}
+
+#' Model differential expression
+#'
+#' `model_bayes()` performs an empirical Bayes fit
+#'
+#' @param .fit an MArrayLM object or list object. Must contain components
+#' `coefficients` and `stdev.unscaled`
+#' @param .f limma::eBayes
+#' @param ... additional arguments to .f
+#'
+#' @details Please refer to \code{\link[limma]{lmFit}} for more information.
+#'
+#' @return a `list` (`MArrayLM`) object containing the results of the fit
+#'
+#' @export
+#'
+#' @examples
+#'
+model_bayes <- function(.fit, .f = limma::eBayes, ...) {
+  .args <- rlang::enexprs(...)
+
+  rlang::eval_tidy(rlang::expr(.f(object = .fit,
                                   !!! .args)))
 }

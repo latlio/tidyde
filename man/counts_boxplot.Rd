@@ -14,7 +14,8 @@ counts_boxplot(
 }
 \arguments{
 \item{count_df}{cleaned dataframe of counts, rows should be gene IDs,
-columns should be samples, cells should only contain counts}
+columns should be samples, cells should only contain counts. Also accepts a
+`DGEList` object}
 
 \item{metadata}{cleaned metadata for RNAseq data}
 
@@ -45,13 +46,22 @@ mymeta <- check_sample_names(counts, c(1,2), meta, FileName) \%>\%
   purrr::pluck("meta")
 
 # View total raw counts
-
 counts_boxplot(mycount, mymeta, SampleName)
 
 # View filtered counts and also facet by variable
 id <- as.character(counts$EntrezGeneID)
 mycount \%>\%
   filter_genes(., id, "edgeR") \%>\%
-  purrr::pluck("counts") \%>\%
   counts_boxplot(., mymeta, SampleName, CellType)
+
+# As a EDA step within a pipeline of functions
+check_sample_names(counts, c(1,2), meta, FileName) \%>\%
+  purrr::pluck("mod_count") \%>\%
+  filter_genes(., id, "edgeR") \%T>\%
+  {print(counts_boxplot(., check_sample_names(counts, c(1,2), meta, FileName) \%>\%
+    purrr::pluck("meta"), SampleName))} \%>\%
+  make_voom(., my_design) \%>\%
+  model_limma() \%>\%
+  make_contrasts(design_matrix = my_design, Statuspregnant, Statusvirgin) \%>\%
+  model_bayes()
 }

@@ -2,6 +2,7 @@
 
 export("%>%")
 export(check_sample_names)
+export(counts_boxplot)
 export(filter_genes)
 export(make_contrasts)
 export(make_design_matrix)

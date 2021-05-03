@@ -18,7 +18,7 @@ confidence intervals be exponentiated?}
 \item{...}{additional arguments}
 }
 \value{
-a `data.frame`
+a `tbl`
 }
 \description{
 These methods tidy the results of differential expression analysis objects.

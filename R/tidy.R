@@ -10,7 +10,7 @@
 #' confidence intervals be exponentiated?
 #' @param ... additional arguments
 #'
-#' @return a `data.frame`
+#' @return a `tbl`
 #'
 #' @export
 #'

@@ -8,9 +8,8 @@ early development. Only `limma` is supported.
 
 ## Installation
 
-`tidyde` requires the development version of several packages, including
-`ggplot2`, to function correctly. You can install the required packages
-for this vignette with the following code:
+You can install the required packages for this vignette with the
+following code:
 
 ``` r
 install.packages(c("devtools", "tidyverse", "rlang"))
@@ -87,8 +86,7 @@ res <- check_sample_names(counts, c(1,2), meta, FileName) %>%
 
 `tidyde` includes `broom`-like methods for cleaning differential
 expression fit results, although it currently is not officially
-supported by `broom`. I’m actively working on that. The `tidy()`
-function in `broom` puts results into a tidy data frame.
+supported by `broom`. I’m actively working on that.
 
 ``` r
 tidy.marray.lm(res)
@@ -113,17 +111,17 @@ tidy.marray.lm(res)
 `tidyde` includes functionality for working with results in `ggplot2`,
 including quick plots for common visualizations.
 
-With tidy data, most data visualizations for meta-analyses are easy to
-build from the ground up. Nevertheless, `tidyde` has several quick plot
-functions to make the process easier. For example, `volcano_plot()`
-takes a tidied DE analysis and plots a volcano plot.
+With tidy data, most data visualizations are easy to build from the
+ground up. Nevertheless, `tidyde` has several quick plot functions to
+make the process easier. For example, `volcano_plot()` takes a tidied DE
+analysis and plots a volcano plot.
 
 ``` r
 tidy.marray.lm(res) %>%
   volcano_plot()
 ```
 
-<img src="man/figures/README-unnamed-chunk-5-1.png" width="100%" >
+<img src="man/figures/README-unnamed-chunk-5-1.png" width="100%" />
 
 Because the results are still `ggplot2` objects, it’s easy to make
 changes to the plot.
@@ -134,7 +132,7 @@ tidy.marray.lm(res) %>%
   scale_color_manual(values = c("#DA70D6", "black", "#00CC00"))
 ```
 
-<img src="man/figures/README-unnamed-chunk-6-1.png" width="100%" >
+<img src="man/figures/README-unnamed-chunk-6-1.png" width="100%" />
 
 `tidyde` currently supports boxplots of counts, PCA plots, and volcano
 plots.

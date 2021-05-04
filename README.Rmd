@@ -21,7 +21,7 @@ Perform differential expression analysis in a tidy way. Currently in early devel
 
 ## Installation
 
-`tidyde` requires the development version of several packages, including `ggplot2`, to function correctly. You can install the required packages for this vignette with the following code:
+You can install the required packages for this vignette with the following code:
 
 ```{r, eval=FALSE}
 install.packages(c("devtools", "tidyverse", "rlang"))
@@ -75,7 +75,7 @@ res <- check_sample_names(counts, c(1,2), meta, FileName) %>%
   model_bayes()
 ```
 
-`tidyde` includes `broom`-like methods for cleaning differential expression fit results, although it currently is not officially supported by `broom`. I'm actively working on that. The `tidy()` function in `broom` puts results into a tidy data frame.
+`tidyde` includes `broom`-like methods for cleaning differential expression fit results, although it currently is not officially supported by `broom`. I'm actively working on that.
 
 ```{r, message = FALSE}
 tidy.marray.lm(res)
@@ -85,7 +85,7 @@ tidy.marray.lm(res)
 
 `tidyde` includes functionality for working with results in `ggplot2`, including quick plots for common visualizations.
 
-With tidy data, most data visualizations for meta-analyses are easy to build from the ground up. Nevertheless, `tidyde` has several quick plot functions to make the process easier. For example, `volcano_plot()` takes a tidied DE analysis and plots a volcano plot.
+With tidy data, most data visualizations are easy to build from the ground up. Nevertheless, `tidyde` has several quick plot functions to make the process easier. For example, `volcano_plot()` takes a tidied DE analysis and plots a volcano plot.
 
 ```{r}
 tidy.marray.lm(res) %>%

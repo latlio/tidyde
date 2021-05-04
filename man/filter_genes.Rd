@@ -31,7 +31,7 @@ a `list` (`DGEList`) with the following components:
 \item{counts}{a vector of the filtered counts}
 \item{samples}{a dataframe containing the library sizes and the normalization
 factors}
-\item{genes} a dataframe containing the gene IDs
+\item{genes}{a dataframe containing the gene IDs}
 }
 \description{
 `filter_genes()` is a wrapper function for several filtering methods.

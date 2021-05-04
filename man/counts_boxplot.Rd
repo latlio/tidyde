@@ -54,7 +54,11 @@ mycount \%>\%
   filter_genes(., id, "edgeR") \%>\%
   counts_boxplot(., mymeta, SampleName, CellType)
 
-# As a EDA step within a pipeline of functions
+# As an EDA step within a pipeline of functions
+my_design <- check_sample_names(counts, c(1,2), meta, FileName) \%>\%
+  purrr::pluck("meta") \%>\%
+  make_design_matrix(., c("Status"))
+
 check_sample_names(counts, c(1,2), meta, FileName) \%>\%
   purrr::pluck("mod_count") \%>\%
   filter_genes(., id, "edgeR") \%T>\%

@@ -48,7 +48,7 @@ counts <- read_delim("data/GSE60450_Lactation-GenewiseCounts.txt",
                      delim = "\t")
 meta <- read_delim("data/SampleInfo_Corrected.txt",
                    delim = "\t") %>%
-  mutate(FileName = str_replace(FileName, "\\.", "-")
+  mutate(FileName = str_replace(FileName, "\\.", "-"))
 ```
 
 `tidyde` is composed of wrapper functions of the `limma` package that perform various steps of a standard differential expression analysis in a tidy way.

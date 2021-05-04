@@ -25,7 +25,17 @@ Note that this function generates a fairly generic PCA plot, and thus is intende
 for quick exploratory purposes (much like the intention behind `qplot()`).
 }
 \examples{
-# As a EDA step within a pipeline of functions
+# As an EDA step within a pipeline of functions
+
+counts <- readr::read_delim("data/GSE60450_Lactation-GenewiseCounts.txt", delim = "\t")
+meta <- readr::read_delim("data/SampleInfo_Corrected.txt", delim = "\t") \%>\%
+  mutate(FileName = stringr::str_replace(FileName, "\\\\.", "-"))
+
+id <- as.character(counts$EntrezGeneID)
+my_design <- check_sample_names(counts, c(1,2), meta, FileName) \%>\%
+  purrr::pluck("meta") \%>\%
+  make_design_matrix(., c("Status"))
+
 check_sample_names(counts, c(1,2), meta, FileName) \%>\%
   purrr::pluck("mod_count") \%>\%
   filter_genes(., id, "edgeR") \%>\%

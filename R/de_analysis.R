@@ -151,7 +151,7 @@ make_design_matrix <- function(metadata, vars) {
 #' \item{counts}{a vector of the filtered counts}
 #' \item{samples}{a dataframe containing the library sizes and the normalization
 #' factors}
-#' \item{genes} a dataframe containing the gene IDs
+#' \item{genes}{a dataframe containing the gene IDs}
 #'
 #' @export
 #'

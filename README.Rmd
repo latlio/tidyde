@@ -1,0 +1,103 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%",
+  fig.height = 8,
+  dpi = 320
+)
+```
+
+# tidyde
+
+Perform differential expression analysis in a tidy way. Currently in early development. Only `limma` is supported. 
+
+## Installation
+
+`tidyde` requires the development version of several packages, including `ggplot2`, to function correctly. You can install the required packages for this vignette with the following code:
+
+```{r, eval=FALSE}
+install.packages(c("devtools", "tidyverse", "rlang"))
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install("edgeR")
+library(devtools)
+install_github("latlio/tidyde")
+```
+
+# Tidy Differential Expression analysis
+
+`tidyde` is a toolkit for working with gene differential expression analysis in R. Currently, it includes a sample count data set, called `GSE60450_Lactation-GenewiseCounts`, and sample metadata, called `SampleInfo_Corrected`. 
+
+```{r, warning = FALSE, message = FALSE}
+library(tidyde)
+library(readr)
+library(purrr)
+library(dplyr)
+library(stringr)
+library(edgeR)
+library(ggplot2)
+counts <- read_delim("data/GSE60450_Lactation-GenewiseCounts.txt",
+                     delim = "\t")
+meta <- read_delim("data/SampleInfo_Corrected.txt",
+                   delim = "\t") %>%
+  mutate(FileName = str_replace(FileName, "\\.", "-")
+```
+
+`tidyde` is composed of wrapper functions of the `limma` package that perform various steps of a standard differential expression analysis in a tidy way.
+
+```{r}
+# Set up objects
+meta <- read_delim("data/SampleInfo_Corrected.txt",
+                   delim = "\t") %>%
+  mutate(FileName = str_replace(FileName, "\\.", "-"))
+
+my_design <- check_sample_names(counts, c(1,2), meta, FileName) %>%
+  purrr::pluck("meta") %>%
+  make_design_matrix(., c("Status"))
+
+id <- as.character(counts$EntrezGeneID)
+
+# Analysis
+res <- check_sample_names(counts, c(1,2), meta, FileName) %>%
+  purrr::pluck("mod_count") %>%
+  filter_genes(., id, "edgeR") %>%
+  make_voom(., my_design) %>%
+  model_limma() %>%
+  make_contrasts(design_matrix = my_design, Statuspregnant, Statusvirgin) %>%
+  model_bayes()
+```
+
+`tidyde` includes `broom`-like methods for cleaning differential expression fit results, although it currently is not officially supported by `broom`. I'm actively working on that. The `tidy()` function in `broom` puts results into a tidy data frame.
+
+```{r, message = FALSE}
+tidy.marray.lm(res)
+```
+
+# Visualization for Meta-Analysis
+
+`tidyde` includes functionality for working with results in `ggplot2`, including quick plots for common visualizations.
+
+With tidy data, most data visualizations for meta-analyses are easy to build from the ground up. Nevertheless, `tidyde` has several quick plot functions to make the process easier. For example, `volcano_plot()` takes a tidied DE analysis and plots a volcano plot.
+
+```{r}
+tidy.marray.lm(res) %>%
+  volcano_plot()
+```
+
+Because the results are still `ggplot2` objects, it's easy to make changes to the plot.
+
+```{r}
+tidy.marray.lm(res) %>%
+  volcano_plot() + 
+  theme_minimal()
+```
+
+`tidyde` currently supports boxplots of counts, PCA plots, and volcano plots.

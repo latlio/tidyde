@@ -94,7 +94,7 @@ tidy.marray.lm(res) %>%
 
 Because the results are still `ggplot2` objects, it's easy to make changes to the plot.
 
-```{r}
+```{r, warning=FALSE, message=FALSE}
 tidy.marray.lm(res) %>%
   volcano_plot() + 
   scale_color_manual(values = c("#DA70D6", "black", "#00CC00"))

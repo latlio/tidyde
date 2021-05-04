@@ -131,7 +131,9 @@ changes to the plot.
 ``` r
 tidy.marray.lm(res) %>%
   volcano_plot() + 
-  theme_minimal()
+  scale_color_manual(values = c("#DA70D6", "black", "#00CC00"))
+#> Scale for 'colour' is already present. Adding another scale for 'colour',
+#> which will replace the existing scale.
 ```
 
 <img src="man/figures/README-unnamed-chunk-6-1.png" width="100%" />

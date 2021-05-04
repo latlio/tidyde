@@ -97,7 +97,7 @@ Because the results are still `ggplot2` objects, it's easy to make changes to th
 ```{r}
 tidy.marray.lm(res) %>%
   volcano_plot() + 
-  theme_minimal()
+  scale_color_manual(values = c("#DA70D6", "black", "#00CC00"))
 ```
 
 `tidyde` currently supports boxplots of counts, PCA plots, and volcano plots.

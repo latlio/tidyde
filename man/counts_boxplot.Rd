@@ -33,7 +33,7 @@ a boxplot of RNAseq counts (ggplot object)
 }
 \details{
 Like any other ggplot object, you can customize the theme of the plot.
-Note that this function generates a fairly generic boxplot, and thus is aimed
+Note that this function generates a fairly generic boxplot, and thus is intended
 for quick exploratory purposes (much like the intention behind `qplot()`).
 }
 \examples{

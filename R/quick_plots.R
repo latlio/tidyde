@@ -13,7 +13,7 @@
 #' @return a boxplot of RNAseq counts (ggplot object)
 #'
 #' @details Like any other ggplot object, you can customize the theme of the plot.
-#' Note that this function generates a fairly generic boxplot, and thus is aimed
+#' Note that this function generates a fairly generic boxplot, and thus is intended
 #' for quick exploratory purposes (much like the intention behind `qplot()`).
 #'
 #' @export
@@ -36,7 +36,11 @@
 #'   filter_genes(., id, "edgeR") %>%
 #'   counts_boxplot(., mymeta, SampleName, CellType)
 #'
-#' # As a EDA step within a pipeline of functions
+#' # As an EDA step within a pipeline of functions
+#' my_design <- check_sample_names(counts, c(1,2), meta, FileName) %>%
+#'   purrr::pluck("meta") %>%
+#'   make_design_matrix(., c("Status"))
+#'
 #' check_sample_names(counts, c(1,2), meta, FileName) %>%
 #'   purrr::pluck("mod_count") %>%
 #'   filter_genes(., id, "edgeR") %T>%
@@ -104,13 +108,23 @@ counts_boxplot <- function(count_df, metadata, sample_var, facet_var = NULL,
 #' @return a scatterplot of the first two PC (ggplot object)
 #'
 #' @details Like any other ggplot object, you can customize the theme of the plot.
-#' Note that this function generates a fairly generic boxplot, and thus is aimed
+#' Note that this function generates a fairly generic PCA plot, and thus is intended
 #' for quick exploratory purposes (much like the intention behind `qplot()`).
 #'
 #' @export
 #'
 #' @examples
-#' # As a EDA step within a pipeline of functions
+#' # As an EDA step within a pipeline of functions
+#'
+#' counts <- readr::read_delim("data/GSE60450_Lactation-GenewiseCounts.txt", delim = "\t")
+#' meta <- readr::read_delim("data/SampleInfo_Corrected.txt", delim = "\t") %>%
+#'   mutate(FileName = stringr::str_replace(FileName, "\\.", "-"))
+#'
+#' id <- as.character(counts$EntrezGeneID)
+#' my_design <- check_sample_names(counts, c(1,2), meta, FileName) %>%
+#'   purrr::pluck("meta") %>%
+#'   make_design_matrix(., c("Status"))
+#'
 #' check_sample_names(counts, c(1,2), meta, FileName) %>%
 #'   purrr::pluck("mod_count") %>%
 #'   filter_genes(., id, "edgeR") %>%
@@ -153,4 +167,66 @@ pca_plot <- function(voom_data, metadata, ...) {
   }
 #' Quickly plot a volcano plot
 #'
-#' `volcano_plot()`
+#' `volcano_plot()` plots a volcano plot
+#'
+#' @param fit tidied dataframe of fit results
+#' @param fc_cutoff cutoff to determine what is considered differentially expressed
+#' @param pval_cutoff plots horizontal line at p-value
+#'
+#' @return a volcano plot (ggplot object)
+#'
+#' @details Like any other ggplot object, you can customize the theme of the plot.
+#' Note that this function generates a fairly generic volcano plot, and thus is
+#' intended for quick exploratory purposes (much like the intention behind `qplot()`).
+#'
+#' @export
+#'
+#' @examples
+#' # As an EDA step within a pipeline of functions
+#'
+#' counts <- readr::read_delim("data/GSE60450_Lactation-GenewiseCounts.txt", delim = "\t")
+#' meta <- readr::read_delim("data/SampleInfo_Corrected.txt", delim = "\t") %>%
+#'   mutate(FileName = stringr::str_replace(FileName, "\\.", "-"))
+#'
+#' id <- as.character(counts$EntrezGeneID)
+#' my_design <- check_sample_names(counts, c(1,2), meta, FileName) %>%
+#'   purrr::pluck("meta") %>%
+#'   make_design_matrix(., c("Status"))
+#'
+#' check_sample_names(counts, c(1,2), meta, FileName) %>%
+#'   purrr::pluck("mod_count") %>%
+#'   filter_genes(., id, "edgeR") %>%
+#'   make_voom(., my_design) %>%
+#'   model_limma() %>%
+#'   make_contrasts(design_matrix = my_design, Statuspregnant, Statusvirgin) %>%
+#'   model_bayes() %>%
+#'   tidy.marray.lm() %>%
+#'   volcano_plot()
+volcano_plot <- function(fit, fc_cutoff = 2, pval_cutoff = 0.05) {
+
+  data_to_plot <- fit %>%
+    dplyr::mutate(DE = case_when(
+      estimate > fc_cutoff & p.value < pval_cutoff ~ "Up",
+      estimate < -1 * fc_cutoff & p.value < pval_cutoff ~ "Down",
+      TRUE ~ "Not DE"),
+      alpha = case_when(
+        DE == "Up" ~ 1,
+        DE == "Down" ~ 1,
+        TRUE ~ 0.3
+      ))
+
+  ggplot(data = data_to_plot,
+         aes(x = estimate,
+             y = -log10(p.value),
+             col = DE,
+             label = gene,
+             alpha = alpha)) +
+    geom_point() +
+    theme_bw() +
+    geom_vline(xintercept = c(-1 * fc_cutoff, fc_cutoff)) +
+    geom_hline(yintercept = -log10(pval_cutoff)) +
+    labs(x = "log Fold Change",
+         y = "-log10(pvalue)") +
+    scale_color_manual(values = c("#FE6C61", "black", "#4E91FF")) +
+    scale_alpha(guide = "none")
+}

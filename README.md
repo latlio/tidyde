@@ -123,7 +123,7 @@ tidy.marray.lm(res) %>%
   volcano_plot()
 ```
 
-<img src="man/figures/README-unnamed-chunk-5-1.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-5-1.png" width="100%" >
 
 Because the results are still `ggplot2` objects, it’s easy to make
 changes to the plot.
@@ -134,7 +134,7 @@ tidy.marray.lm(res) %>%
   scale_color_manual(values = c("#DA70D6", "black", "#00CC00"))
 ```
 
-<img src="man/figures/README-unnamed-chunk-6-1.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-6-1.png" width="100%" >
 
 `tidyde` currently supports boxplots of counts, PCA plots, and volcano
 plots.

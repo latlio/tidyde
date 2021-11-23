@@ -180,8 +180,6 @@ pca_plot <- function(voom_data, metadata, ...) {
 #' Note that this function generates a fairly generic volcano plot, and thus is
 #' intended for quick exploratory purposes (much like the intention behind `qplot()`).
 #'
-#' @import ggplot2,
-#'
 #' @export
 #'
 #' @examples

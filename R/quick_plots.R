@@ -213,9 +213,9 @@ volcano_plot <- function(fit, fc_cutoff = 2, pval_cutoff = 0.05) {
       TRUE ~ "Not DE"),
       color_groups = case_when(
         p.value >= pval_cutoff ~ "NS",
-        p.value < pval_cutoff & abs(estimate) < 2 ~ "Significant",
-        p.value >= pval_cutoff & abs(estimate) >= 2 ~ "High FC",
-        p.value < pval_cutoff & abs(estimate) >= 2 ~ "Significant and high FC"),
+        p.value < pval_cutoff & abs(estimate) < fc_cutoff ~ "Significant",
+        p.value >= pval_cutoff & abs(estimate) >= fc_cutoff ~ "High FC",
+        p.value < pval_cutoff & abs(estimate) >= fc_cutoff ~ "Significant and high FC"),
       alpha = case_when(
         DE == "Up" ~ 1,
         DE == "Down" ~ 1,

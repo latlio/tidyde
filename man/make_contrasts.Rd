@@ -4,7 +4,7 @@
 \alias{make_contrasts}
 \title{Make contrasts}
 \usage{
-make_contrasts(.fit, design_matrix, ...)
+make_contrasts(.fit, design_matrix, .condition1, .condition2)
 }
 \arguments{
 \item{.fit}{an MArrayLM object or list object. Must contain components
@@ -12,6 +12,10 @@ make_contrasts(.fit, design_matrix, ...)
 
 \item{design_matrix}{a design matrix with rows corresponding to samples
 and columns to coefficients to be estimated}
+
+\item{.condition1}{the control}
+
+\item{.condition2}{the experimental}
 
 \item{...}{the names of the variables which you like to compare}
 }

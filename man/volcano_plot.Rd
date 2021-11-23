@@ -14,7 +14,8 @@ volcano_plot(fit, fc_cutoff = 2, pval_cutoff = 0.05)
 \item{pval_cutoff}{plots horizontal line at p-value}
 }
 \value{
-a volcano plot (ggplot object)
+a `list` containing a volcano plot (ggplot object) and the data used to
+generate the volcano plot
 }
 \description{
 `volcano_plot()` plots a volcano plot

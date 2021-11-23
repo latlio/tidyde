@@ -2,7 +2,7 @@
 % Please edit documentation in R/de_analysis.R
 \name{check_sample_names}
 \alias{check_sample_names}
-\title{Check sample names}
+\title{Functions for simulating RNAseq DE data}
 \usage{
 check_sample_names(count_df, cols_to_remove, metadata, metadata_var)
 }
@@ -26,6 +26,9 @@ a `list` with the following components:
 metadata is returned with console message output of the quality control check.}
 }
 \description{
+Check sample names
+}
+\details{
 `check_sample_names()` is a simple quality control step that verifies whether
 the column names in the count matrix match with a user-defined metadata column.
 In order for a match to occur, the value levels of the column names and those of the
@@ -33,8 +36,7 @@ user-defined metadata column need to be identical
 (e.g. `setdiff(colnames(my_count_matrix), metadata$my_column)` should be 0),
 and the order in which the values appear need to be identical
 (e.g. `identical(colnames(my_count_matrix), metadata$my_column)` should be TRUE).
-}
-\details{
+
 The proportion of zeros in the original count data is also printed to the
 console. For count data that has a medium to high proportion of zeros,
 \code{\link[edgeR]{voomLmFit}} is recommended. Otherwise

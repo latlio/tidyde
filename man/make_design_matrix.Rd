@@ -9,15 +9,18 @@ make_design_matrix(metadata, vars)
 \arguments{
 \item{metadata}{cleaned metadata for RNAseq data}
 
-\item{vars}{a character vector of variables to include in the model}
+\item{vars}{a character vector of variables to include in the model
+these should be case-specific and match the variable names in the metadata}
 }
 \value{
-a `tbl` of the design matrix
+a `tbl` of the design matrix. Column names will be formatted as
+`paste0(variablename, samplename)`
 }
 \description{
 `make_design_matrix()` creates a model matrix for your DE analysis.
 See \code{\link[stats]{model.matrix}} for further details on what a design
-(or model) matrix is.
+(or model) matrix is. This function prints out the column names so that you
+can view what your design matrix variable names are
 }
 \details{
 The order in which you specify your variables will affect which

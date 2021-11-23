@@ -1,3 +1,5 @@
+#' Functions for simulating RNAseq DE data
+#'
 #' Check sample names
 #'
 #' `check_sample_names()` is a simple quality control step that verifies whether
@@ -48,38 +50,41 @@ check_sample_names <- function(count_df,
   }
 
   #output count dataframe with purely counts
-  count_df_mod <- count_df[,-cols_to_remove]
-
-  if (
-    identical(
-      setdiff(colnames(count_df)[-cols_to_remove],
-              metadata %>% dplyr::select({{metadata_var}}) %>% dplyr::pull()),
-              character(0)
-    )
-  ){
-    message("The column names of the count matrix and the unique sample ID values are correctly specified.")
-
-    if(
+  if(is.null(cols_to_remove)) {
+    count_df_mod <- count_df
+  } else {
+    count_df_mod <- count_df[,-cols_to_remove]
+    if (
       identical(
-        colnames(count_df)[-cols_to_remove],
-        metadata %>% dplyr::select({{metadata_var}}) %>% dplyr::pull()
+        setdiff(colnames(count_df)[-cols_to_remove],
+                metadata %>% dplyr::select({{metadata_var}}) %>% dplyr::pull()),
+        character(0)
       )
-    ) {
-      message("The order is also correct. You can safely proceed with the remaining analysis steps.")
-    } else {
-      message("The data was ordered incorrectly. The metadata has been reordered.")
-      metadata <- metadata[
-        match(
+    ){
+      message("The column names of the count matrix and the unique sample ID values are correctly specified.")
+
+      if(
+        identical(
           colnames(count_df)[-cols_to_remove],
           metadata %>% dplyr::select({{metadata_var}}) %>% dplyr::pull()
-        ),]
+        )
+      ) {
+        message("The order is also correct. You can safely proceed with the remaining analysis steps.")
+      } else {
+        message("The data was ordered incorrectly. The metadata has been reordered.")
+        metadata <- metadata[
+          match(
+            colnames(count_df)[-cols_to_remove],
+            metadata %>% dplyr::select({{metadata_var}}) %>% dplyr::pull()
+          ),]
+      }
+    } else {
+      stop("Please specify a different variable or check that the values in the metadata are written correctly.")
     }
-  } else {
-    stop("Please specify a different variable or check that the values in the metadata are written correctly.")
   }
 
-  cat("The proportion of zeroes in your count data is ",
-      sum(count_df == 0)/(ncol(count_df) * nrow(count_df)))
+  # cat("The proportion of zeroes in your count data is ",
+  #     sum(count_df == 0)/(ncol(count_df) * nrow(count_df)))
 
   list(
     old_count = count_df,
@@ -92,15 +97,18 @@ check_sample_names <- function(count_df,
 #'
 #' `make_design_matrix()` creates a model matrix for your DE analysis.
 #' See \code{\link[stats]{model.matrix}} for further details on what a design
-#' (or model) matrix is.
+#' (or model) matrix is. This function prints out the column names so that you
+#' can view what your design matrix variable names are
 #'
 #' @param metadata cleaned metadata for RNAseq data
 #' @param vars a character vector of variables to include in the model
+#' these should be case-specific and match the variable names in the metadata
 #'
 #' @details The order in which you specify your variables will affect which
 #' variable is dummy coded as the reference variable.
 #'
-#' @return a `tbl` of the design matrix
+#' @return a `tbl` of the design matrix. Column names will be formatted as
+#' `paste0(variablename, samplename)`
 #'
 #' @export
 #'
@@ -123,8 +131,10 @@ check_sample_names <- function(count_df,
 
 make_design_matrix <- function(metadata, vars) {
   formula <- as.formula(paste0("~ 0 + ", paste(vars, collapse = "+")))
-  modelr::model_matrix(metadata,
-                       formula)
+  out <- modelr::model_matrix(metadata,
+                              formula)
+  print(tibble(variables = colnames(out)))
+  out
 }
 
 #'
@@ -209,7 +219,7 @@ filter_genes <- function(count_df,
       tibble::rownames_to_column("id") %>%
       rowwise() %>%
       mutate(cond = {ind <- c_across(2:last_col())
-                     sum(ind >= min_cpm) >= ncol(tmp)/min_samples}) %>%
+      sum(ind >= min_cpm) >= ncol(tmp)/min_samples}) %>%
       ungroup() %>%
       tibble::column_to_rownames("id") %>%
       filter(cond)
@@ -316,6 +326,8 @@ model_limma <- function(.data, .f = limma::lmFit, ...) {
 #' `coefficients` and `stdev.unscaled`
 #' @param design_matrix a design matrix with rows corresponding to samples
 #' and columns to coefficients to be estimated
+#' @param .condition1 the control
+#' @param .condition2 the experimental
 #' @param ... the names of the variables which you like to compare
 #'
 #' @details Please refer to \code{\link[limma]{contrasts.fit}} for more information.
@@ -336,9 +348,23 @@ model_limma <- function(.data, .f = limma::lmFit, ...) {
 #'   make_voom(., my_design) %>%
 #'   model_limma() %>%
 #'   make_contrasts(Statuspregnant, Statusvirgin)
-make_contrasts <- function(.fit, design_matrix, ...) {
-  contrast_components <- rlang::enexprs(...)
-  my_contrast <- paste(contrast_components, collapse = " - ")
+make_contrasts <- function(.fit, design_matrix, .condition1, .condition2) {
+  # check types, if input is symbol
+  if(is.symbol(.condition1)) {
+    condition1 <- rlang::enexpr(.condition1)
+  } else {
+    #if string
+    condition1 <- .condition1
+  }
+
+  if(is.symbol(.condition2)) {
+    condition2 <- rlang::enexpr(.condition2)
+  } else {
+    #if string
+    condition2 <- .condition2
+  }
+
+  my_contrast <- paste(c(condition2, condition1), collapse = " - ")
   contrast_matrix <- limma::makeContrasts(
     contrasts = c(my_contrast),
     levels = colnames(design_matrix)
@@ -379,4 +405,71 @@ model_bayes <- function(.fit, .f = limma::eBayes, ...) {
 
   rlang::eval_tidy(rlang::expr(.f(fit = .fit,
                                   !!! .args)))
+}
+
+#' A function that runs a sample limma-voom DE workflow
+#'
+#' This wrapper function uses all the functions within this function and strings them
+#' together in a sample workflow. Currently only `limma` is supported.
+#'
+#' @param raw_counts cleaned dataframe of counts, rows should be gene IDs,
+#' columns should be samples, cells should only contain counts
+#' @param cols_to_remove vector of column numbers that do not correspond to a sample,
+#' necessary to identify for downstream functions
+#' @param metadata cleaned metadata for RNAseq data
+#' @param .metadata_var column of sample identifier that user expects to match with
+#' count_matrix
+#' @param .design_var a character vector of variables to include in the model
+#' these should be case-specific and match the variable names in the metadata
+#' @param contrastcond1 control var
+#' @param contrastcond2 experimentl var
+#' @param .filter_method Please refer to \code{\link[tidyde]{filter_genes}} for more information.
+#'
+#' @return a `tbl`
+#'
+#' @export
+#'
+#' @examples
+#'
+#' cond_df <- tibble(cond1 = c("a1", "a2", "a3"), cond2 = c("b1", "b2", "b3"))
+#'
+#' map2(cond_df$cond1, cond_df$cond2, ~run_sample_limma_de(
+#' my_counts,
+#' my_metadata,
+#' my_variable,
+#' my_design_variable,
+#' .x,
+#' .y))
+run_sample_limma_de <- function(raw_counts,
+                                metadata,
+                                .metadata_var,
+                                .design_vars,
+                                contrastcond1,
+                                contrastcond2,
+                                .cols_to_remove = NULL,
+                                .filter_method = "edgeR"
+) {
+  the_design <- check_sample_names(raw_counts,
+                                   cols_to_remove = .cols_to_remove,
+                                   metadata,
+                                   .metadata_var) %>%
+    purrr::pluck("meta") %>%
+    make_design_matrix(., .design_vars)
+
+  the_id <- as.character(row.names(raw_counts))
+
+  the_de_res <- check_sample_names(raw_counts,
+                                   cols_to_remove = .cols_to_remove,
+                                   metadata,
+                                   .metadata_var) %>%
+    purrr::pluck("mod_count") %>%
+    filter_genes(., the_id, .filter_method) %>%
+    make_voom(., the_design) %>%
+    model_limma() %>%
+    make_contrasts(design_matrix = the_design,
+                   contrastcond1,
+                   contrastcond2) %>%
+    model_bayes()
+
+  tidy.marray.lm(the_de_res)
 }

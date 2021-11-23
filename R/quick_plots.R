@@ -173,11 +173,14 @@ pca_plot <- function(voom_data, metadata, ...) {
 #' @param fc_cutoff cutoff to determine what is considered differentially expressed
 #' @param pval_cutoff plots horizontal line at p-value
 #'
-#' @return a volcano plot (ggplot object)
+#' @return a `list` containing a volcano plot (ggplot object) and the data used to
+#' generate the volcano plot
 #'
 #' @details Like any other ggplot object, you can customize the theme of the plot.
 #' Note that this function generates a fairly generic volcano plot, and thus is
 #' intended for quick exploratory purposes (much like the intention behind `qplot()`).
+#'
+#' @import ggplot2,
 #'
 #' @export
 #'
@@ -202,6 +205,7 @@ pca_plot <- function(voom_data, metadata, ...) {
 #'   model_bayes() %>%
 #'   tidy.marray.lm() %>%
 #'   volcano_plot()
+
 volcano_plot <- function(fit, fc_cutoff = 2, pval_cutoff = 0.05) {
 
   data_to_plot <- fit %>%
@@ -209,24 +213,74 @@ volcano_plot <- function(fit, fc_cutoff = 2, pval_cutoff = 0.05) {
       estimate > fc_cutoff & p.value < pval_cutoff ~ "Up",
       estimate < -1 * fc_cutoff & p.value < pval_cutoff ~ "Down",
       TRUE ~ "Not DE"),
+      color_groups = case_when(
+        p.value >= pval_cutoff ~ "NS",
+        p.value < pval_cutoff & abs(estimate) < 2 ~ "Significant",
+        p.value >= pval_cutoff & abs(estimate) >= 2 ~ "High FC",
+        p.value < pval_cutoff & abs(estimate) >= 2 ~ "Significant and high FC"),
       alpha = case_when(
         DE == "Up" ~ 1,
         DE == "Down" ~ 1,
         TRUE ~ 0.3
       ))
 
-  ggplot(data = data_to_plot,
-         aes(x = estimate,
-             y = -log10(p.value),
-             col = DE,
-             label = gene,
-             alpha = alpha)) +
+  outp <- ggplot(data = data_to_plot,
+                 aes(x = estimate,
+                     y = -log10(p.value),
+                     col = color_groups,
+                     label = gene,
+                     alpha = alpha)) +
     geom_point() +
-    theme_bw() +
-    geom_vline(xintercept = c(-1 * fc_cutoff, fc_cutoff)) +
-    geom_hline(yintercept = -log10(pval_cutoff)) +
-    labs(x = "log Fold Change",
-         y = "-log10(pvalue)") +
-    scale_color_manual(values = c("#FE6C61", "black", "#4E91FF")) +
+    geom_label_repel(data = subset(data_to_plot,
+                                   color_groups == "Significant and high FC"),
+                     aes(label = gene),
+                     col = "black",
+                     alpha = 1,
+                     show.legend = FALSE,
+                     min.segment.length = unit(0, 'lines')) +
+    geom_segment(
+      x = 0.5,
+      y = max(-log10(data_to_plot$p.value), na.rm = TRUE) + 4,
+      xend = max(data_to_plot$estimate, na.rm = TRUE) + 1,
+      yend = max(-log10(data_to_plot$p.value), na.rm = TRUE) + 4,
+      lineend = "square", # See available arrow types in example above
+      linejoin = "round",
+      size = 1,
+      arrow = arrow(length = unit(0.3, "inches")),
+      colour = "#31938A") +
+    annotate(geom = "label",
+             x = max(data_to_plot$estimate, na.rm = TRUE) + 1,
+             y = max(-log10(data_to_plot$p.value), na.rm = TRUE) + 4.5,
+             label = "Treatment",
+             col = "#31938A") +
+    geom_segment(
+      x = -0.5,
+      y = max(-log10(data_to_plot$p.value), na.rm = TRUE) + 4,
+      xend = min(data_to_plot$estimate, na.rm = TRUE) - 1,
+      yend = max(-log10(data_to_plot$p.value), na.rm = TRUE) + 4,
+      lineend = "square", # See available arrow types in example above
+      linejoin = "round",
+      size = 1,
+      arrow = arrow(length = unit(0.3, "inches")),
+      colour = "#31938A") +
+    annotate(geom = "label",
+             x = min(data_to_plot$estimate, na.rm=TRUE) - 1,
+             y = max(-log10(data_to_plot$p.value), na.rm = TRUE) + 4.5,
+             label = "Control",
+             col = "#31938A") +
+    geom_vline(xintercept = c(-1 * fc_cutoff, fc_cutoff),
+               lty = 2, alpha = 0.2) +
+    geom_hline(yintercept = -log10(pval_cutoff),
+               lty = 2, alpha = 0.2) +
+    xlim(min(data_to_plot$estimate, na.rm = TRUE) - 1.5,
+         max(data_to_plot$estimate, na.rm = TRUE) + 1.5) +
+    ylim(0, max(-log10(data_to_plot$p.value), na.rm = TRUE) + 5) +
+    labs(x = bquote(~-Log[2]~ "fold change"),
+         y = bquote(~-Log[10]~adjusted~italic(P))) +
+
+    scale_color_manual(values = c("black", "#4E91FF", "#008000", "#FE6C61")) +
     scale_alpha(guide = "none")
+
+    list(data = data_to_plot,
+         volcano = outp)
 }
